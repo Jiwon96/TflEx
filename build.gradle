@@ -1,0 +1,45 @@
+buildscript {
+    repositories {
+        google()
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:4.1.0-rc03'
+	classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.10'
+    }
+}
+
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
+
+repositories {
+    google()
+    jcenter()
+}
+
+android {
+    compileSdkVersion 30
+
+    defaultConfig {
+        applicationId "com.peyo.tflex"
+        minSdkVersion 28
+        targetSdkVersion 30
+    }
+
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            java.srcDirs = ['src']
+            res.srcDirs = ['res']
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+}
