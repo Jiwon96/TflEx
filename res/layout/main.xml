@@ -13,14 +13,13 @@
         android:onClick="onComputeClick" />
 
     <ToggleButton
-        android:id="@+id/toggleButton"
+        android:id="@+id/nnapiToggle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:checked="true"
+        android:checked="false"
         android:layout_alignLeft="@id/computeButton"
         android:layout_marginStart="140dp"
         android:layout_marginTop="13dp"
-        android:visibility="invisible"
         android:textOff="NNAPI Disabled"
         android:textOn="NNAPI Enabled"
         android:onClick="onNNApiClick"/>
@@ -35,6 +34,7 @@
         android:layout_below="@+id/computeButton"
         android:layout_marginTop="20dp"
         android:textSize="20dp"/>
+
     <TextView
         android:id="@+id/textView2"
         android:layout_width="wrap_content"
