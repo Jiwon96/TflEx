@@ -20,6 +20,7 @@
         android:layout_alignLeft="@id/computeButton"
         android:layout_marginStart="140dp"
         android:layout_marginTop="13dp"
+        android:visibility="invisible"
         android:textOff="NNAPI Disabled"
         android:textOn="NNAPI Enabled"
         android:onClick="onNNApiClick"/>
