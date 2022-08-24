@@ -52,11 +52,12 @@ class MainActivity: Activity() {
             if (nnapiToggle.isChecked) {
                 options.addDelegate(NnApiDelegate())
             } else {
-                options.setNumThreads(2)
+                options.setNumThreads(1)
             }
             tflite = Interpreter(tfliteModel, options)
 
             inferenceTime = 0
+            firstFrame = true
             for(image in images) {
                 convertBitmapToByteBuffer(getBitmap(image))
 
@@ -69,7 +70,7 @@ class MainActivity: Activity() {
 
             runOnUiThread {
                 textView1.text = "Summary: \n\t Average Inference time (ms): " +
-                        "${inferenceTime / images.size}"
+                        "${inferenceTime / (images.size - 1)}"
                 textView2.text = ""
             }
             tflite.close()
@@ -95,7 +96,11 @@ class MainActivity: Activity() {
 
         runOnUiThread {
             textView1.text = "Inference time (ms): " + runtime
-            inferenceTime += runtime
+            if (firstFrame) {
+                firstFrame = false
+            } else {
+                inferenceTime += runtime
+            }
 
             textView2.text = text
         }
@@ -103,6 +108,7 @@ class MainActivity: Activity() {
 
     private var startTime: Long = 0
     private var inferenceTime : Long = 0
+    private var firstFrame : Boolean = true
 
     private lateinit var tfliteModel: MappedByteBuffer
     private var imgData: ByteBuffer? = null
