@@ -114,8 +114,7 @@ class MainActivity: Activity() {
 //                imgData!!.putFloat(v / 255f);
                 imgData!!.putFloat(((v shr 16 and 0xFF) /255f)) // 16bit~23 R
                 imgData!!.putFloat(((v shr 8 and 0xFF) /255f))  // 8 ~ 15 bit G
-                imgData!!.putFloat(((v and 0xFF) /255f))        // 0 ~ 7bit B
-            }
+                imgData!!.putFloat(((v and 0xFF) /255f))        // 0 ~ 7
         }
     }
 
