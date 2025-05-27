@@ -5,7 +5,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.os.SystemClock
-import android.util.Log
 import android.view.View
 import kotlinx.android.synthetic.main.main.*
 import org.tensorflow.lite.Interpreter
@@ -24,16 +23,22 @@ import kotlin.concurrent.thread
 class MainActivity: Activity() {
     companion object {
         private const val TAG = "TFLEx01"
-        private val images = arrayOf("1.jpg","2.jpg","3.jpg","4.jpg",
-            "5.jpg","6.jpg","7.jpg","8.jpg",
-            "9.jpg","10.jpg","11.jpg","12.jpg")
+        private val images = arrayOf("test_image.jpg", "test_image1.jpg",
+            "test_image2.jpg", "test_image3.jpg", "test_image4.jpg",
+            "test_image5.jpg", "test_image.jpg", "test_image1.jpg",
+            "test_image2.jpg", "test_image3.jpg", "test_image4.jpg",
+            "test_image5.jpg", "test_image.jpg", "test_image1.jpg",
+            "test_image2.jpg", "test_image3.jpg", "test_image4.jpg",
+            "test_image5.jpg", "test_image.jpg", "test_image1.jpg",
+            "test_image2.jpg", "test_image3.jpg", "test_image4.jpg",
+            "test_image5.jpg")
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.main)
         loadLabels()
-        tfliteModel = FileUtil.loadMappedFile(this, "logistic.tflite")
+        tfliteModel = FileUtil.loadMappedFile(this, "mobilenet_v1_1_0_224_float.tflite")
     }
 
     override fun onDestroy() {
@@ -58,7 +63,7 @@ class MainActivity: Activity() {
 
                 startTime = SystemClock.uptimeMillis()
                 tflite.run(imgData, outputs)
-                printLabels(image)
+                printLabels()
 
                 Thread.sleep(500)
             }
@@ -70,13 +75,24 @@ class MainActivity: Activity() {
             }
             tflite.close()
         }
-     }
+    }
 
-    private fun printLabels(str: String) {
+    private fun printLabels() {
         val runtime = SystemClock.uptimeMillis() - startTime
+
+        for (i in 0 until getNumLabels()) {
+            sortedLabels.add(SimpleEntry(labelList[i], outputs[0][i]))
+            if (sortedLabels.size > RESULTS_TO_SHOW) {
+                sortedLabels.poll()
+            }
+        }
+
         var text = ""
-        text = if (outputs[0][0] > 0.5f) "강아지" else "고양이"
-        text = str + ": Result:" + text
+        for (i in 0 until sortedLabels.size) {
+            val label = sortedLabels.poll()
+            text = String.format("\n  %s: %f", label.key, label.value) + text
+        }
+        text = "Result:" + text
 
         runOnUiThread {
             textView1.text = "Inference time (ms): " + runtime
@@ -96,33 +112,51 @@ class MainActivity: Activity() {
 
     private lateinit var tfliteModel: MappedByteBuffer
     private var imgData: ByteBuffer? = null
-    private val intValues = IntArray(256 * 256) // 그림 256 * 256
+    private val intValues = IntArray(224 * 224)
+    private val IMAGE_MEAN = 128.0f
+    private val IMAGE_STD = 128.0f
+
     private fun convertBitmapToByteBuffer(bitmap: Bitmap) {
         if (imgData == null) {
             imgData = ByteBuffer.allocateDirect(
-                    1 * 256 * 256 * 3 * 4) // int = byte * 4
+                1 * 224 * 224 * 3 * 4)
             imgData!!.order(ByteOrder.nativeOrder())
         }
         imgData!!.rewind()
         bitmap.getPixels(intValues, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
 
         var pixel = 0
-        for (i in 0 until 256) {            // 256 * 256 * 3 => [[[1,2,3], [1,2,3], [1,2,3]] ... [[1,2,3], [1,2,3], [1,2,3]], ... [[1,2,3], [1,2,3], [1,2,3]]]
-            for (j in 0 until 256) {        // https://forums.oracle.com/ords/apexds/post/what-does-0xff-and-0x0f-mean-6851
+        for (i in 0 until 224) {
+            for (j in 0 until 224) {
                 val v: Int = intValues.get(pixel++)
-//                Log.i( "test", v.toString())
-//                imgData!!.putFloat(v / 255f);
-                imgData!!.putFloat(((v shr 16 and 0xFF) /255f)) // 16bit~23 R
-                imgData!!.putFloat(((v shr 8 and 0xFF) /255f))  // 8 ~ 15 bit G
-                imgData!!.putFloat(((v and 0xFF) /255f))        // 0 ~ 7
+                imgData!!.putFloat(((v shr 16 and 0xFF) - IMAGE_MEAN) / IMAGE_STD)
+                imgData!!.putFloat(((v shr 8 and 0xFF) - IMAGE_MEAN) / IMAGE_STD)
+                imgData!!.putFloat(((v and 0xFF) - IMAGE_MEAN) / IMAGE_STD)
+            }
         }
     }
 
+    private val RESULTS_TO_SHOW = 3
+
+    private val sortedLabels = PriorityQueue<Map.Entry<String, Float>>(RESULTS_TO_SHOW)
+    { o1, o2 -> o1.value.compareTo(o2.value) }
+
     private lateinit var tflite: Interpreter
+    private var labelList = ArrayList<String>()
     private lateinit var outputs: Array<FloatArray>
 
     private fun loadLabels() {
-        outputs = Array(1) { FloatArray(1) }
+        val reader = BufferedReader(InputStreamReader(assets.open("labels.txt")))
+        var line = reader.readLine()
+        while(line != null) {
+            labelList.add(line)
+            line = reader.readLine()
+        }
+        outputs = Array(1) { FloatArray(labelList.size) }
+    }
+
+    private fun getNumLabels(): Int {
+        return labelList.size
     }
 
     private fun getBitmap(imageName: String): Bitmap {
@@ -130,6 +164,9 @@ class MainActivity: Activity() {
         runOnUiThread {
             imageView.setImageBitmap(Bitmap.createScaledBitmap(stream, 480, 480, true))
         }
-        return Bitmap.createScaledBitmap(stream, 256, 256, true)
+        return Bitmap.createScaledBitmap(stream, 224, 224, true)
+    }
+
+    fun onNNApiClick(v: View) {
     }
 }
