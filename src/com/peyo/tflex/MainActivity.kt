@@ -24,16 +24,14 @@ import kotlin.concurrent.thread
 class MainActivity: Activity() {
     companion object {
         private const val TAG = "TFLEx01"
-        private val images = arrayOf("1.jpg","2.jpg","3.jpg","4.jpg",
-            "5.jpg","6.jpg","7.jpg","8.jpg",
-            "9.jpg","10.jpg","11.jpg","12.jpg")
+        private val images = arrayOf("image1.png", "image2.png", "la_defense.jpg", "my_image.jpg", "my_image2.jpg")
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.main)
         loadLabels()
-        tfliteModel = FileUtil.loadMappedFile(this, "logistic.tflite")
+        tfliteModel = FileUtil.loadMappedFile(this, "logistic__optim.tflite")
     }
 
     override fun onDestroy() {
@@ -75,7 +73,7 @@ class MainActivity: Activity() {
     private fun printLabels(str: String) {
         val runtime = SystemClock.uptimeMillis() - startTime
         var text = ""
-        text = if (outputs[0][0] > 0.5f) "강아지" else "고양이"
+        text = if (outputs[0][0] > 0.5f) "고양이" else "고양이아님"
         text = str + ": Result:" + text
 
         runOnUiThread {
@@ -96,19 +94,19 @@ class MainActivity: Activity() {
 
     private lateinit var tfliteModel: MappedByteBuffer
     private var imgData: ByteBuffer? = null
-    private val intValues = IntArray(256 * 256) // 그림 256 * 256
+    private val intValues = IntArray(64 * 64) // 그림 256 * 256
     private fun convertBitmapToByteBuffer(bitmap: Bitmap) {
         if (imgData == null) {
             imgData = ByteBuffer.allocateDirect(
-                    1 * 256 * 256 * 3 * 4) // int = byte * 4
+                    1 * 64 * 64 * 3 * 4) // int = byte * 4
             imgData!!.order(ByteOrder.nativeOrder())
         }
         imgData!!.rewind()
         bitmap.getPixels(intValues, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
 
         var pixel = 0
-        for (i in 0 until 256) {            // 256 * 256 * 3 => [[[1,2,3], [1,2,3], [1,2,3]] ... [[1,2,3], [1,2,3], [1,2,3]], ... [[1,2,3], [1,2,3], [1,2,3]]]
-            for (j in 0 until 256) {        // https://forums.oracle.com/ords/apexds/post/what-does-0xff-and-0x0f-mean-6851
+        for (i in 0 until 64) {            // 256 * 256 * 3 => [[[1,2,3], [1,2,3], [1,2,3]] ... [[1,2,3], [1,2,3], [1,2,3]], ... [[1,2,3], [1,2,3], [1,2,3]]]
+            for (j in 0 until 64) {        // https://forums.oracle.com/ords/apexds/post/what-does-0xff-and-0x0f-mean-6851
                 val v: Int = intValues.get(pixel++)
 //                Log.i( "test", v.toString())
 //                imgData!!.putFloat(v / 255f);
@@ -131,6 +129,6 @@ class MainActivity: Activity() {
         runOnUiThread {
             imageView.setImageBitmap(Bitmap.createScaledBitmap(stream, 480, 480, true))
         }
-        return Bitmap.createScaledBitmap(stream, 256, 256, true)
+        return Bitmap.createScaledBitmap(stream, 64, 64, true)
     }
 }
